@@ -1,43 +1,80 @@
-// define express
 const express = require("express");
-
-// create app
 const app = express();
-
-// define mongoose
 const mongoose = require("mongoose");
-
-// define cors
 const cors = require("cors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-// create new Model -> User
-const UserModel = require("./models/Users");
-
-// connect vs with database
-mongoose.connect(
-  "mongodb+srv://saeedaltout:xpVaKBRwxAbU3pyA@cluster0.w2bke9k.mongodb.net/mern?retryWrites=true&w=majority"
-);
-
-// use corsOption to fix fetch data
 app.use(cors());
-
-// use express.json() to fix send data
 app.use(express.json());
 
-// get data and put in root -> /users
+const UserModel = require("./models/Users");
+
+app.listen(process.env.PORT, () => {
+  console.log("Server Working !!");
+});
+
+mongoose.connect(
+  `mongodb+srv://${process.env.USERNAME}:${process.env.PASSWORD}@cluster0.w2bke9k.mongodb.net/${process.env.DATABASE}?retryWrites=true&w=majority`
+);
+
 app.get("/users", async (req, res) => {
   const users = await UserModel.find();
   res.json(users);
 });
 
-// send data and put in root -> /create
-app.post("/create", async (req, res) => {
-  const newUesr = new UserModel(req.body);
-  await newUesr.save();
-  res.json(req.body);
+app.post("/register", async (req, res) => {
+  const { username, email, password } = await req.body;
+
+  // check from user
+  const user = await UserModel.findOne({ username });
+  if (user) {
+    return res.json({ message: "The user already exists, please try again." });
+  }
+
+  //hashing password
+  const hashPassword = bcrypt.hashSync(password, 10);
+
+  //create new user in db
+  const newUser = new UserModel({
+    username,
+    email,
+    password: hashPassword,
+  });
+
+  newUser?.save();
+  return res.json({
+    message: "The creation of a new user has been registered successfully.",
+  });
 });
 
-// create server ->localhost:3001 -> /
-app.listen("3001", () => {
-  console.log("Server Working !!");
+app.post("/login", async (req, res) => {
+  const { username, password } = await req.body;
+
+  // check from user
+  const user = await UserModel.findOne({ username });
+
+  if (!user) {
+    return res.json({ message: "The user not found, please try again." });
+  }
+
+  //hashing password
+  const hashPassword = bcrypt.hashSync(password, 10);
+
+  // check from correct password
+  const passwordIsCorrect = bcrypt.compare(hashPassword, user.password);
+  if (!passwordIsCorrect) {
+    return res.json({
+      message: "Username or password is incorrect, please try again.",
+    });
+  }
+
+  const token = jwt.sign({ id: user._id }, process.env.SECRET);
+
+  return res.json({
+    username,
+    password: hashPassword,
+    token,
+    userID: user._id,
+  });
 });

@@ -1,29 +1,11 @@
 import axios from "axios";
+import Router from "next/router";
 import { useEffect, useState } from "react";
+import { useCookies } from "react-cookie";
 
 const Home = () => {
   const [users, setUsers] = useState([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const createUser = () => {
-    try {
-      if (name && email && password) {
-        axios
-          .post("http://localhost:3001/create", {
-            name,
-            email,
-            password,
-          })
-          .then((res) => {
-            return res.data;
-          });
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const [cookies, setCookies] = useCookies(["access_token"]);
 
   useEffect(() => {
     let config = {
@@ -43,59 +25,22 @@ const Home = () => {
       });
   }, [users]);
 
+  const logout = async () => {
+    window.localStorage.setItem("userID", "");
+    setCookies("access_token", "");
+    Router.push("/auth");
+  };
   return (
     <div className="container mx-auto">
-      <h1 className="mt-20 mb-10 text-5xl font-bold text-center">All Users</h1>
-
-      <div className="flex flex-col max-w-2xl gap-10 mx-auto mb-20">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="pl-4">
-            Name:
-          </label>
-          <input
-            type="text"
-            name="name"
-            id="name"
-            placeholder="Name"
-            className="px-5 py-3 bg-black-400 focus:outline-none focus:border-none"
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="pl-4">
-            Email:
-          </label>
-          <input
-            type="text"
-            name="email"
-            id="email"
-            placeholder="Email"
-            className="px-5 py-3 bg-black-400 focus:outline-none focus:border-none"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="password" className="pl-4">
-            Password:
-          </label>
-          <input
-            type="text"
-            name="password"
-            id="password"
-            placeholder="Password"
-            className="px-5 py-3 bg-black-400 focus:outline-none focus:border-none"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
+      <h1 className="flex items-center justify-center gap-10 mt-20 mb-10 text-5xl font-bold text-center">
+        All Users
         <button
-          className="px-5 py-3 ml-auto cursor-pointer bg-black-400 w-fit"
-          onClick={createUser}
+          onClick={logout}
+          className="px-4 py-2 ml-5 text-base transition bg-red-500 hover:bg-red-600"
         >
-          Save
+          Logout
         </button>
-      </div>
-
+      </h1>
       <div className="flex flex-wrap items-center justify-between gap-10">
         {users.length > 0 ? (
           <>
@@ -108,7 +53,7 @@ const Home = () => {
                   <strong>Email:</strong> {email}
                 </p>
                 <p>
-                  <strong>Password:</strong> {password}
+                  <strong>Password:</strong> ************
                 </p>
               </div>
             ))}
